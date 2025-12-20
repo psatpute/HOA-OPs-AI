@@ -12,7 +12,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/lib/store';
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { label: 'Income', href: '/income', icon: Wallet },
   { label: 'Projects', href: '/projects', icon: Briefcase },
   { label: 'Documents', href: '/documents', icon: FileText },
+  { label: 'Contacts', href: '/contact', icon: Users },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -120,3 +122,4 @@ export default function Sidebar() {
     </>
   );
 }
+
