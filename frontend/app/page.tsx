@@ -7,6 +7,7 @@ import { useApp } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, CheckCircle, Shield, Zap, LayoutDashboard } from 'lucide-react';
+import ChatbotPlaceholder from '@/components/ChatbotPlaceholder';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -209,6 +210,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      <ChatbotPlaceholder />
     </div>
   );
 }
+
