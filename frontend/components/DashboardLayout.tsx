@@ -6,6 +6,8 @@ import Header from './Header';
 import { useApp } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 
+import ChatbotPlaceholder from './ChatbotPlaceholder';
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
   title: string;
@@ -41,6 +43,8 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           </div>
         </main>
       </div>
+      <ChatbotPlaceholder />
     </div>
   );
 }
+
