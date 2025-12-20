@@ -39,14 +39,14 @@ export default function ChatbotPlaceholder() {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-2xl transition-all duration-300 ${
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fixed bottom-6 right-6 z-[100] p-4 rounded-full shadow-2xl transition-all duration-300 ${
           isOpen 
-            ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 opacity-0 pointer-events-none' 
-            : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white opacity-100'
+            ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' 
+            : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
         }`}
       >
-        <MessageCircle className="w-6 h-6" />
+        {isOpen ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </motion.button>
 
       {/* Chat Window */}
@@ -56,7 +56,7 @@ export default function ChatbotPlaceholder() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-[350px] md:w-[400px] h-[500px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-[100] w-[350px] md:w-[400px] h-[500px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-between shrink-0">
@@ -128,3 +128,4 @@ export default function ChatbotPlaceholder() {
     </>
   );
 }
+
