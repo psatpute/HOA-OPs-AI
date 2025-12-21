@@ -6,6 +6,7 @@ import logging
 
 from config import settings
 from database import connect_to_mongo, close_mongo_connection, ping_database
+from routers import auth, expenses, income, projects, proposals, documents
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +44,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(expenses.router, prefix="/api/v1")
+app.include_router(income.router, prefix="/api/v1")
+app.include_router(projects.router, prefix="/api/v1")
+app.include_router(proposals.router, prefix="/api/v1")
+app.include_router(documents.router, prefix="/api/v1")
 
 
 @app.get("/healthz")
