@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from models.project import (
-    ProjectCreate, 
-    ProjectUpdate, 
-    ProjectResponse, 
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
     ProjectDetailResponse,
     ProjectListResponse
 )
+from models.proposal import ProposalResponse
 from crud import project as project_crud
+from crud import proposal as proposal_crud
 from auth.middleware import get_current_user
 from models.user import UserInDB
 
@@ -205,3 +207,76 @@ async def archive_project(
         raise HTTPException(status_code=404, detail="Project not found")
     
     return {"message": "Project archived successfully"}
+
+
+@router.get("/{project_id}/comparison")
+async def get_project_comparison(
+    project_id: str,
+    current_user: UserInDB = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """
+    Get vendor comparison data for a project.
+    
+    Returns:
+    - Project details
+    - All non-archived proposals for the project, sorted by bidAmount (ascending)
+    
+    This endpoint is used for the vendor comparison view where board members
+    can compare different vendor proposals side-by-side.
+    
+    Returns 404 if project not found.
+    """
+    # Get project details
+    project = await project_crud.get_project_by_id(project_id)
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get all non-archived proposals for this project, sorted by bid amount
+    proposals, _ = await proposal_crud.get_proposals(
+        project_id=project_id,
+        archived=False,
+        limit=100,  # Get all proposals for comparison
+        skip=0
+    )
+    
+    # Sort proposals by bidAmount (ascending - cheapest first)
+    sorted_proposals = sorted(proposals, key=lambda p: p.bidAmount)
+    
+    # Convert to response format
+    proposal_responses = [
+        ProposalResponse(
+            id=prop.id,
+            projectId=prop.projectId,
+            vendorName=prop.vendorName,
+            bidAmount=prop.bidAmount,
+            timeline=prop.timeline,
+            warranty=prop.warranty,
+            scopeSummary=prop.scopeSummary,
+            fileUrl=prop.fileUrl,
+            status=prop.status,
+            uploadedBy=prop.uploadedBy,
+            createdAt=prop.createdAt,
+            updatedAt=prop.updatedAt,
+            archivedAt=prop.archivedAt
+        )
+        for prop in sorted_proposals
+    ]
+    
+    return {
+        "project": ProjectResponse(
+            id=project.id,
+            name=project.name,
+            description=project.description,
+            status=project.status,
+            budget=project.budget,
+            startDate=project.startDate,
+            endDate=project.endDate,
+            assignedVendorId=project.assignedVendorId,
+            createdBy=project.createdBy,
+            createdAt=project.createdAt,
+            updatedAt=project.updatedAt,
+            archivedAt=project.archivedAt
+        ),
+        "proposals": proposal_responses
+    }
