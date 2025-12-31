@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -12,25 +12,56 @@ export default function ChatbotPlaceholder() {
     { id: 1, text: "Hi! I'm your HOA OpsAI assistant. How can I help you today?", sender: 'bot' }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isLoading) return;
 
+    const userMessage = inputValue.trim();
+    
     // Add user message
-    const userMsg = { id: Date.now(), text: inputValue, sender: 'user' };
+    const userMsg = { id: Date.now(), text: userMessage, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botMsg = { 
-        id: Date.now() + 1, 
-        text: "I'm currently in development mode. In the future, I'll be able to help you analyze proposals, track expenses, and answer questions about your HOA documents.", 
-        sender: 'bot' 
+    try {
+      // Call backend API (no authentication required)
+      const response = await fetch('http://localhost:8000/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: userMessage })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to get response from AI');
+      }
+
+      const data = await response.json();
+      
+      // Add bot response
+      const botMsg = {
+        id: Date.now() + 1,
+        text: data.message,
+        sender: 'bot'
       };
       setMessages(prev => [...prev, botMsg]);
-    }, 1000);
+      
+    } catch (error) {
+      // Add error message
+      const errorMsg = {
+        id: Date.now() + 1,
+        text: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
+        sender: 'bot'
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,14 +139,19 @@ export default function ChatbotPlaceholder() {
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Type a message..."
                   className="flex-1"
+                  disabled={isLoading}
                 />
-                <Button 
-                  type="submit" 
-                  size="sm" 
+                <Button
+                  type="submit"
+                  size="sm"
                   className="px-3"
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || isLoading}
                 >
-                  <Send className="w-4 h-4" />
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
                 </Button>
               </form>
               <p className="text-[10px] text-center text-slate-400 mt-2">

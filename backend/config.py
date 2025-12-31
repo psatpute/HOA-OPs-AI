@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     upload_dir: str = "./uploads"
     max_file_size: int = 10485760  # 10MB in bytes
+    openai_api_key: str = ""  # OpenAI API key for chatbot
     
     model_config = SettingsConfigDict(
         env_file=".env",

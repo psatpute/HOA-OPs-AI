@@ -8,7 +8,7 @@ import os
 
 from config import settings
 from database import connect_to_mongo, close_mongo_connection, ping_database
-from routers import auth, expenses, income, projects, proposals, documents, dashboard
+from routers import auth, expenses, income, projects, proposals, documents, dashboard, ai
 from auth.middleware import get_current_user
 from models.user import UserInDB
 from fastapi import Depends
@@ -58,6 +58,7 @@ app.include_router(projects.router, prefix="/api/v1")
 app.include_router(proposals.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(ai.router)  # AI router without /api/v1 prefix
 
 
 @app.get("/healthz")

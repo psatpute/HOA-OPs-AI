@@ -20,7 +20,8 @@ async def connect_to_mongo():
         logger.info("Successfully connected to MongoDB Atlas")
     except Exception as e:
         logger.error(f"Failed to connect to MongoDB: {e}")
-        raise
+        logger.warning("Server will continue without database connection. Some features may be unavailable.")
+        # Don't raise - allow server to start without DB for AI chatbot functionality
 
 
 async def close_mongo_connection():
