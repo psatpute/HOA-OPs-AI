@@ -70,10 +70,21 @@ async def chat(request: ChatRequest):
             )
             
             if response.status_code != 200:
-                error_detail = response.json().get("error", {}).get("message", "Unknown error")
+                error_data = response.json().get("error", {})
+                error_message = error_data.get("message", "Unknown error")
+                error_type = error_data.get("type", "")
+                
+                # Handle quota exceeded error specifically
+                if response.status_code == 429 or "quota" in error_message.lower():
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="The AI chatbot service is temporarily unavailable due to API quota limits. Please try again later or contact support to upgrade the service plan."
+                    )
+                
+                # Handle other API errors
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"OpenAI API error: {error_detail}"
+                    detail=f"OpenAI API error: {error_message}"
                 )
             
             # Extract the response message

@@ -52,11 +52,23 @@ export default function ChatbotPlaceholder() {
       setMessages(prev => [...prev, botMsg]);
       
     } catch (error) {
-      // Add error message
+      // Add error message with better formatting
+      let errorText = 'Sorry, I encountered an error. Please try again.';
+      
+      if (error instanceof Error) {
+        errorText = error.message;
+        
+        // Make quota/service unavailable errors more user-friendly
+        if (errorText.includes('quota') || errorText.includes('temporarily unavailable')) {
+          errorText = '⚠️ The AI service is currently unavailable due to API limits. The service will be restored once billing is updated. Please try again later.';
+        }
+      }
+      
       const errorMsg = {
         id: Date.now() + 1,
-        text: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
-        sender: 'bot'
+        text: errorText,
+        sender: 'bot',
+        isError: true
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
@@ -113,15 +125,17 @@ export default function ChatbotPlaceholder() {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50">
-              {messages.map((msg) => (
-                <div 
-                  key={msg.id} 
+              {messages.map((msg: any) => (
+                <div
+                  key={msg.id}
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div 
+                  <div
                     className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                      msg.sender === 'user' 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
+                      msg.sender === 'user'
+                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        : msg.isError
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-tl-none shadow-sm'
                         : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-tl-none shadow-sm'
                     }`}
                   >
