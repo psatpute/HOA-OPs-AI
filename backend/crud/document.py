@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 from bson import ObjectId
 
-from database import database
+import database as db_module
 from models.document import DocumentCreate, DocumentUpdate, DocumentInDB
 
 
@@ -26,7 +26,7 @@ async def create_document(
     Returns:
         Created document from database
     """
-    documents_collection = database.documents
+    documents_collection = db_module.database.documents
     
     document_dict = {
         "title": document_data.title,
@@ -67,7 +67,7 @@ async def get_documents(
     Returns:
         Tuple of (list of documents, total count)
     """
-    documents_collection = database.documents
+    documents_collection = db_module.database.documents
     
     # Build filter query
     query = {}
@@ -110,7 +110,7 @@ async def get_document_by_id(document_id: str) -> Optional[DocumentInDB]:
     Returns:
         Document if found, None otherwise
     """
-    documents_collection = database.documents
+    documents_collection = db_module.database.documents
     
     try:
         document_doc = await documents_collection.find_one({"_id": ObjectId(document_id)})
@@ -135,7 +135,7 @@ async def update_document(document_id: str, document_data: DocumentUpdate) -> Op
     Returns:
         Updated document if found, None otherwise
     """
-    documents_collection = database.documents
+    documents_collection = db_module.database.documents
     
     try:
         # Build update dict with only provided fields
@@ -179,7 +179,7 @@ async def archive_document(document_id: str) -> bool:
     Returns:
         True if archived successfully, False otherwise
     """
-    documents_collection = database.documents
+    documents_collection = db_module.database.documents
     
     try:
         result = await documents_collection.update_one(

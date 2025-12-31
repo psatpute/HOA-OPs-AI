@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 from bson import ObjectId
 
-from database import database
+import database as db_module
 from models.expense import ExpenseCreate, ExpenseInDB
 
 
@@ -17,7 +17,7 @@ async def create_expense(expense_data: ExpenseCreate, user_id: str) -> ExpenseIn
     Returns:
         Created expense from database
     """
-    expenses_collection = database.expenses
+    expenses_collection = db_module.database.expenses
     
     expense_dict = {
         "date": expense_data.date,
@@ -59,7 +59,7 @@ async def get_expenses(
     Returns:
         Tuple of (list of expenses, total count)
     """
-    expenses_collection = database.expenses
+    expenses_collection = db_module.database.expenses
     
     # Build filter query
     query = {}
@@ -103,7 +103,7 @@ async def get_expense_by_id(expense_id: str) -> Optional[ExpenseInDB]:
     Returns:
         Expense if found, None otherwise
     """
-    expenses_collection = database.expenses
+    expenses_collection = db_module.database.expenses
     
     try:
         expense_doc = await expenses_collection.find_one({"_id": ObjectId(expense_id)})

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 from bson import ObjectId
 
-from database import database
+import database as db_module
 from models.project import ProjectCreate, ProjectUpdate, ProjectInDB
 
 
@@ -17,7 +17,7 @@ async def create_project(project_data: ProjectCreate, user_id: str) -> ProjectIn
     Returns:
         Created project from database
     """
-    projects_collection = database.projects
+    projects_collection = db_module.database.projects
     
     project_dict = {
         "name": project_data.name,
@@ -59,7 +59,7 @@ async def get_projects(
     Returns:
         Tuple of (list of projects, total count)
     """
-    projects_collection = database.projects
+    projects_collection = db_module.database.projects
     
     # Build filter query
     query = {}
@@ -101,7 +101,7 @@ async def get_project_by_id(project_id: str) -> Optional[ProjectInDB]:
     Returns:
         Project if found, None otherwise
     """
-    projects_collection = database.projects
+    projects_collection = db_module.database.projects
     
     try:
         project_doc = await projects_collection.find_one({"_id": ObjectId(project_id)})
@@ -125,9 +125,9 @@ async def get_project_with_aggregations(project_id: str) -> Optional[dict]:
     Returns:
         Dict with project, proposals, expenses, and actualSpent if found, None otherwise
     """
-    projects_collection = database.projects
-    proposals_collection = database.proposals
-    expenses_collection = database.expenses
+    projects_collection = db_module.database.projects
+    proposals_collection = db_module.database.proposals
+    expenses_collection = db_module.database.expenses
     
     try:
         # Get project
@@ -178,7 +178,7 @@ async def update_project(project_id: str, project_data: ProjectUpdate) -> Option
     Returns:
         Updated project if found, None otherwise
     """
-    projects_collection = database.projects
+    projects_collection = db_module.database.projects
     
     try:
         # Build update dict with only provided fields
@@ -230,7 +230,7 @@ async def archive_project(project_id: str) -> bool:
     Returns:
         True if archived successfully, False otherwise
     """
-    projects_collection = database.projects
+    projects_collection = db_module.database.projects
     
     try:
         result = await projects_collection.update_one(

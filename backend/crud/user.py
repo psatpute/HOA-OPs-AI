@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from bson import ObjectId
 
-from database import database
+import database as db_module
 from models.user import UserCreate, UserInDB
 
 
@@ -16,8 +16,14 @@ async def create_user(user_data: UserCreate, password_hash: str) -> UserInDB:
         
     Returns:
         Created user from database
+        
+    Raises:
+        RuntimeError: If database is not connected
     """
-    users_collection = database.users
+    if db_module.database is None:
+        raise RuntimeError("Database connection not established")
+    
+    users_collection = db_module.database.users
     
     user_dict = {
         "email": user_data.email,
@@ -44,8 +50,14 @@ async def get_user_by_email(email: str) -> Optional[UserInDB]:
         
     Returns:
         User if found, None otherwise
+        
+    Raises:
+        RuntimeError: If database is not connected
     """
-    users_collection = database.users
+    if db_module.database is None:
+        raise RuntimeError("Database connection not established")
+    
+    users_collection = db_module.database.users
     
     user_doc = await users_collection.find_one({"email": email})
     
@@ -65,8 +77,14 @@ async def get_user_by_id(user_id: str) -> Optional[UserInDB]:
         
     Returns:
         User if found, None otherwise
+        
+    Raises:
+        RuntimeError: If database is not connected
     """
-    users_collection = database.users
+    if db_module.database is None:
+        raise RuntimeError("Database connection not established")
+    
+    users_collection = db_module.database.users
     
     try:
         user_doc = await users_collection.find_one({"_id": ObjectId(user_id)})
@@ -89,8 +107,14 @@ async def update_last_login(user_id: str) -> bool:
         
     Returns:
         True if updated successfully, False otherwise
+        
+    Raises:
+        RuntimeError: If database is not connected
     """
-    users_collection = database.users
+    if db_module.database is None:
+        raise RuntimeError("Database connection not established")
+    
+    users_collection = db_module.database.users
     
     try:
         result = await users_collection.update_one(

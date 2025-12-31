@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApp } from '@/lib/store';
@@ -58,7 +59,8 @@ export default function Dashboard() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
-    <DashboardLayout title="Financial Overview">
+    <ProtectedRoute>
+      <DashboardLayout title="Financial Overview">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card gradient className="border-none shadow-lg shadow-blue-500/10">
@@ -205,6 +207,7 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

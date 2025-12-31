@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
-import { useApp } from '@/lib/store';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Search, Filter, Download, Receipt } from 'lucide-react';
+import { Plus, Search, Download, Loader2 } from 'lucide-react';
+import * as api from '@/lib/api';
 
 const EXPENSE_CATEGORIES = [
   { value: 'Maintenance', label: 'Maintenance' },
@@ -22,7 +23,10 @@ const EXPENSE_CATEGORIES = [
 ];
 
 export default function ExpensesPage() {
-  const { transactions, addTransaction, projects } = useApp();
+  const [expenses, setExpenses] = useState<api.ExpenseResponse[]>([]);
+  const [projects, setProjects] = useState<api.ProjectResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -37,35 +41,65 @@ export default function ExpensesPage() {
     projectId: '',
   });
 
-  const expenses = transactions
-    .filter(t => t.type === 'expense')
-    .filter(t => 
-      (categoryFilter === 'All' || t.category === categoryFilter) &&
-      (t.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-       t.vendor?.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Fetch expenses and projects on mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [expensesResponse, projectsResponse] = await Promise.all([
+        api.getExpenses(),
+        api.getProjects()
+      ]);
+      setExpenses(expensesResponse.expenses);
+      setProjects(projectsResponse.projects);
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+      setError(err instanceof api.ApiError ? err.message : 'Failed to load expenses');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredExpenses = expenses
+    .filter(e => 
+      (categoryFilter === 'All' || e.category === categoryFilter) &&
+      (e.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       e.vendor?.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addTransaction({
-      date: formData.date,
-      amount: Number(formData.amount),
-      category: formData.category,
-      description: formData.description,
-      type: 'expense',
-      vendor: formData.vendor,
-      projectId: formData.projectId || undefined,
-    });
-    setIsModalOpen(false);
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      amount: '',
-      category: 'Maintenance',
-      vendor: '',
-      description: '',
-      projectId: '',
-    });
+    try {
+      await api.createExpense({
+        date: formData.date,
+        amount: Number(formData.amount),
+        category: formData.category,
+        description: formData.description,
+        vendor: formData.vendor,
+        projectId: formData.projectId || undefined,
+      });
+      
+      // Refresh expenses list
+      await fetchData();
+      
+      setIsModalOpen(false);
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        amount: '',
+        category: 'Maintenance',
+        vendor: '',
+        description: '',
+        projectId: '',
+      });
+    } catch (err) {
+      console.error('Failed to create expense:', err);
+      alert(err instanceof api.ApiError ? err.message : 'Failed to create expense');
+    }
   };
 
   const projectOptions = [
@@ -73,8 +107,30 @@ export default function ExpensesPage() {
     ...projects.map(p => ({ value: p.id, label: p.name }))
   ];
 
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Expense Tracking">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout title="Expense Tracking">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={fetchData}>Retry</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout title="Expense Tracking">
+    <ProtectedRoute>
+      <DashboardLayout title="Expense Tracking">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -118,14 +174,14 @@ export default function ExpensesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {expenses.length === 0 ? (
+              {filteredExpenses.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
                     No expenses found matching your criteria.
                   </td>
                 </tr>
               ) : (
-                expenses.map((expense) => (
+                filteredExpenses.map((expense) => (
                   <tr key={expense.id} className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
                       {formatDate(expense.date)}
@@ -224,6 +280,7 @@ export default function ExpensesPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

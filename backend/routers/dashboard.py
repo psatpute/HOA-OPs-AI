@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any, List
 from datetime import datetime
 
-from database import database
+import database as db_module
 from auth.middleware import get_current_user
 from models.user import UserInDB
 from bson import ObjectId
@@ -34,7 +34,7 @@ async def get_dashboard_summary(
                 }
             }
         ]
-        income_result = await database.income.aggregate(income_pipeline).to_list(1)
+        income_result = await db_module.database.income.aggregate(income_pipeline).to_list(1)
         total_income = income_result[0]["total"] if income_result else 0.0
         
         # Get total expenses
@@ -46,7 +46,7 @@ async def get_dashboard_summary(
                 }
             }
         ]
-        expenses_result = await database.expenses.aggregate(expenses_pipeline).to_list(1)
+        expenses_result = await db_module.database.expenses.aggregate(expenses_pipeline).to_list(1)
         total_expenses = expenses_result[0]["total"] if expenses_result else 0.0
         
         # Calculate balance
@@ -65,7 +65,7 @@ async def get_dashboard_summary(
                 "$sort": {"total": -1}
             }
         ]
-        category_results = await database.expenses.aggregate(category_pipeline).to_list(None)
+        category_results = await db_module.database.expenses.aggregate(category_pipeline).to_list(None)
         expenses_by_category = {
             item["_id"]: {
                 "total": item["total"],
@@ -75,7 +75,7 @@ async def get_dashboard_summary(
         }
         
         # Get recent income transactions
-        recent_income = await database.income.find().sort("createdAt", -1).limit(5).to_list(5)
+        recent_income = await db_module.database.income.find().sort("createdAt", -1).limit(5).to_list(5)
         income_transactions = [
             {
                 "id": str(inc["_id"]),
@@ -90,7 +90,7 @@ async def get_dashboard_summary(
         ]
         
         # Get recent expense transactions
-        recent_expenses = await database.expenses.find().sort("createdAt", -1).limit(5).to_list(5)
+        recent_expenses = await db_module.database.expenses.find().sort("createdAt", -1).limit(5).to_list(5)
         expense_transactions = [
             {
                 "id": str(exp["_id"]),

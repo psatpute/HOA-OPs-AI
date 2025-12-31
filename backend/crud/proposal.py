@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List
 from bson import ObjectId
 
-from database import database
+import database as db_module
 from models.proposal import ProposalCreate, ProposalUpdate, ProposalInDB
 
 
@@ -22,7 +22,7 @@ async def create_proposal(
     Returns:
         Created proposal from database
     """
-    proposals_collection = database.proposals
+    proposals_collection = db_module.database.proposals
     
     proposal_dict = {
         "projectId": proposal_data.projectId,
@@ -65,7 +65,7 @@ async def get_proposals(
     Returns:
         Tuple of (list of proposals, total count)
     """
-    proposals_collection = database.proposals
+    proposals_collection = db_module.database.proposals
     
     # Build filter query
     query = {}
@@ -104,7 +104,7 @@ async def get_proposal_by_id(proposal_id: str) -> Optional[ProposalInDB]:
     Returns:
         Proposal if found, None otherwise
     """
-    proposals_collection = database.proposals
+    proposals_collection = db_module.database.proposals
     
     try:
         proposal_doc = await proposals_collection.find_one({"_id": ObjectId(proposal_id)})
@@ -129,7 +129,7 @@ async def update_proposal(proposal_id: str, proposal_data: ProposalUpdate) -> Op
     Returns:
         Updated proposal if found, None otherwise
     """
-    proposals_collection = database.proposals
+    proposals_collection = db_module.database.proposals
     
     try:
         # Build update dict with only provided fields
@@ -179,7 +179,7 @@ async def archive_proposal(proposal_id: str) -> bool:
     Returns:
         True if archived successfully, False otherwise
     """
-    proposals_collection = database.proposals
+    proposals_collection = db_module.database.proposals
     
     try:
         result = await proposals_collection.update_one(

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,8 @@ export default function IncomePage() {
   };
 
   return (
-    <DashboardLayout title="Income & Balances">
+    <ProtectedRoute>
+      <DashboardLayout title="Income & Balances">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -240,6 +242,7 @@ export default function IncomePage() {
           </div>
         </div>
       </Modal>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

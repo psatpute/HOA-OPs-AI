@@ -35,37 +35,43 @@ async def signup(user_data: UserCreate):
     Raises:
         HTTPException: If email already exists or validation fails
     """
-    # Check if user already exists
-    existing_user = await get_user_by_email(user_data.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        # Check if user already exists
+        existing_user = await get_user_by_email(user_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Validate password length
+        if len(user_data.password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
+            )
+        
+        # Hash password and create user
+        password_hash = hash_password(user_data.password)
+        user = await create_user(user_data, password_hash)
+        
+        # Generate JWT token
+        token = create_access_token(user.id)
+        
+        # Return user with token
+        return UserWithToken(
+            id=user.id,
+            email=user.email,
+            firstName=user.firstName,
+            lastName=user.lastName,
+            role=user.role,
+            token=token
         )
-    
-    # Validate password length
-    if len(user_data.password) < 8:
+    except RuntimeError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database service unavailable: {str(e)}"
         )
-    
-    # Hash password and create user
-    password_hash = hash_password(user_data.password)
-    user = await create_user(user_data, password_hash)
-    
-    # Generate JWT token
-    token = create_access_token(user.id)
-    
-    # Return user with token
-    return UserWithToken(
-        id=user.id,
-        email=user.email,
-        firstName=user.firstName,
-        lastName=user.lastName,
-        role=user.role,
-        token=token
-    )
 
 
 @router.post("/login", response_model=UserWithToken)
@@ -82,37 +88,43 @@ async def login(login_data: LoginRequest):
     Raises:
         HTTPException: If credentials are invalid
     """
-    # Get user by email
-    user = await get_user_by_email(login_data.email)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+    try:
+        # Get user by email
+        user = await get_user_by_email(login_data.email)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        # Verify password
+        if not verify_password(login_data.password, user.passwordHash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password"
+            )
+        
+        # Update last login timestamp
+        await update_last_login(user.id)
+        
+        # Generate JWT token
+        token = create_access_token(user.id)
+        
+        # Return user with token
+        return UserWithToken(
+            id=user.id,
+            email=user.email,
+            firstName=user.firstName,
+            lastName=user.lastName,
+            role=user.role,
+            token=token
         )
-    
-    # Verify password
-    if not verify_password(login_data.password, user.passwordHash):
+    except RuntimeError as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database service unavailable: {str(e)}"
         )
-    
-    # Update last login timestamp
-    await update_last_login(user.id)
-    
-    # Generate JWT token
-    token = create_access_token(user.id)
-    
-    # Return user with token
-    return UserWithToken(
-        id=user.id,
-        email=user.email,
-        firstName=user.firstName,
-        lastName=user.lastName,
-        role=user.role,
-        token=token
-    )
 
 
 @router.post("/logout", response_model=LogoutResponse)

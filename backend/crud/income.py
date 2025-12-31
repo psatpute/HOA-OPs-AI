@@ -4,7 +4,7 @@ from bson import ObjectId
 import pandas as pd
 from io import BytesIO
 
-from database import database
+import database as db_module
 from models.income import IncomeCreate, IncomeInDB
 
 
@@ -19,7 +19,7 @@ async def create_income(income_data: IncomeCreate, user_id: str) -> IncomeInDB:
     Returns:
         Created income from database
     """
-    income_collection = database.income
+    income_collection = db_module.database.income
     
     income_dict = {
         "date": income_data.date,
@@ -54,7 +54,7 @@ async def get_income_list(
     Returns:
         Tuple of (list of income records, total count)
     """
-    income_collection = database.income
+    income_collection = db_module.database.income
     
     # Build filter query
     query = {}
@@ -90,7 +90,7 @@ async def bulk_create_income(income_list: List[IncomeCreate], user_id: str) -> i
     Returns:
         Number of records created
     """
-    income_collection = database.income
+    income_collection = db_module.database.income
     
     income_dicts = []
     for income_data in income_list:

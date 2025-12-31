@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,9 +11,9 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { useApp } from '@/lib/store';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Search, Calendar, DollarSign, ArrowRight } from 'lucide-react';
+import { Plus, Search, DollarSign, ArrowRight, Loader2 } from 'lucide-react';
+import * as api from '@/lib/api';
 
 const PROJECT_STATUSES = [
   { value: 'Planned', label: 'Planned' },
@@ -21,7 +22,9 @@ const PROJECT_STATUSES = [
 ];
 
 export default function ProjectsPage() {
-  const { projects, addProject } = useApp();
+  const [projects, setProjects] = useState<api.ProjectResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -30,11 +33,30 @@ export default function ProjectsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: 'Planned',
+    status: 'Planned' as 'Planned' | 'In Progress' | 'Completed',
     budget: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
   });
+
+  // Fetch projects on mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await api.getProjects();
+      setProjects(response.projects);
+    } catch (err) {
+      console.error('Failed to fetch projects:', err);
+      setError(err instanceof api.ApiError ? err.message : 'Failed to load projects');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredProjects = projects
     .filter(p => 
@@ -43,25 +65,34 @@ export default function ProjectsPage() {
        p.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addProject({
-      name: formData.name,
-      description: formData.description,
-      status: formData.status as any,
-      budget: Number(formData.budget),
-      startDate: formData.startDate,
-      endDate: formData.endDate || undefined,
-    });
-    setIsModalOpen(false);
-    setFormData({
-      name: '',
-      description: '',
-      status: 'Planned',
-      budget: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-    });
+    try {
+      await api.createProject({
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        budget: Number(formData.budget),
+        startDate: formData.startDate,
+        endDate: formData.endDate || undefined,
+      });
+      
+      // Refresh projects list
+      await fetchProjects();
+      
+      setIsModalOpen(false);
+      setFormData({
+        name: '',
+        description: '',
+        status: 'Planned',
+        budget: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+      });
+    } catch (err) {
+      console.error('Failed to create project:', err);
+      alert(err instanceof api.ApiError ? err.message : 'Failed to create project');
+    }
   };
 
   const getStatusVariant = (status: string) => {
@@ -72,8 +103,30 @@ export default function ProjectsPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Projects">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout title="Projects">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={fetchProjects}>Retry</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout title="Projects">
+    <ProtectedRoute>
+      <DashboardLayout title="Projects">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center space-x-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
@@ -178,7 +231,7 @@ export default function ProjectsPage() {
               label="Status"
               options={PROJECT_STATUSES}
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
             />
           </div>
 
@@ -208,6 +261,7 @@ export default function ProjectsPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }
