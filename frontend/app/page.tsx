@@ -11,9 +11,7 @@ import ChatbotPlaceholder from '@/components/ChatbotPlaceholder';
 
 export default function LandingPage() {
   const router = useRouter();
-  const { login, user } = useApp();
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useApp();
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -22,13 +20,8 @@ export default function LandingPage() {
     }
   }, [user, router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    login(email);
-    router.push('/dashboard');
+  const handleGetStarted = () => {
+    router.push('/auth');
   };
 
   return (
@@ -55,7 +48,7 @@ export default function LandingPage() {
         <div className="hidden md:flex items-center space-x-8">
           <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</a>
           <a href="#about" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">About</a>
-          <Button variant="secondary" size="sm" onClick={() => document.getElementById('login-form')?.scrollIntoView({ behavior: 'smooth' })}>
+          <Button variant="secondary" size="sm" onClick={() => router.push('/auth')}>
             Sign In
           </Button>
         </div>
@@ -80,32 +73,27 @@ export default function LandingPage() {
               Streamline finances, compare vendor proposals, and manage projects in one centralized, AI-ready dashboard.
             </p>
             
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl max-w-md shadow-2xl shadow-blue-900/20" id="login-form">
-              <h3 className="text-lg font-semibold mb-4">Get Started</h3>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="treasurer@hoa.com"
-                    className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full py-4 text-lg" 
-                  isLoading={isLoading}
-                >
-                  Enter Dashboard <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <p className="text-xs text-center text-slate-500 mt-4">
-                  By continuing, you agree to our Terms of Service.
-                </p>
-              </form>
+            <div className="flex gap-4">
+              <Button
+                onClick={handleGetStarted}
+                size="lg"
+                className="text-lg px-8 py-6"
+              >
+                Get Started <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+              <Button
+                onClick={() => router.push('/auth')}
+                variant="outline"
+                size="lg"
+                className="text-lg px-8 py-6 border-white/20 hover:bg-white/10"
+              >
+                Sign In
+              </Button>
             </div>
+            
+            <p className="text-sm text-slate-500 mt-6">
+              Secure authentication • Password protected • Role-based access
+            </p>
           </motion.div>
 
           <motion.div

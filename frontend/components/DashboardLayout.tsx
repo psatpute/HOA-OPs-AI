@@ -3,9 +3,7 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { useApp } from '@/lib/store';
-import { useRouter } from 'next/navigation';
-
+import ProtectedRoute from './ProtectedRoute';
 import ChatbotPlaceholder from './ChatbotPlaceholder';
 
 interface DashboardLayoutProps {
@@ -14,25 +12,8 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const { user } = useApp();
-  const router = useRouter();
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (isMounted && !user) {
-      router.push('/');
-    }
-  }, [isMounted, user, router]);
-
-  if (!isMounted) return null;
-
-  if (!user) return null; // Will redirect in useEffect
-
   return (
+    <ProtectedRoute>
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Sidebar />
       <div className="lg:ml-64 min-h-screen flex flex-col">
@@ -45,6 +26,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       </div>
       <ChatbotPlaceholder />
     </div>
+    </ProtectedRoute>
   );
 }
 

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as api from './api';
 
 // Types
 export type User = {
   id: string;
   name: string;
   email: string;
-  role: 'Treasurer' | 'President' | 'Member';
+  role: string;
 };
 
 export type Transaction = {
@@ -62,8 +63,12 @@ type AppState = {
 };
 
 type AppContextType = AppState & {
-  login: (email: string) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (data: api.SignupData) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+  clearError: () => void;
   addTransaction: (t: Omit<Transaction, 'id'>) => void;
   addProject: (p: Omit<Project, 'id'>) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
@@ -102,18 +107,45 @@ const INITIAL_DATA: AppState = {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(INITIAL_DATA);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount and check for existing session
   useEffect(() => {
-    const saved = localStorage.getItem('hoa-ops-data');
-    if (saved) {
-      try {
-        setState(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved state", e);
+    const initializeAuth = async () => {
+      const saved = localStorage.getItem('hoa-ops-data');
+      if (saved) {
+        try {
+          setState(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse saved state", e);
+        }
       }
-    }
-    setIsInitialized(true);
+
+      // Check if user has a valid token
+      const token = api.getAuthToken();
+      if (token) {
+        try {
+          const userProfile = await api.getCurrentUser();
+          setState(prev => ({
+            ...prev,
+            user: {
+              id: userProfile.id,
+              name: `${userProfile.firstName} ${userProfile.lastName}`,
+              email: userProfile.email,
+              role: userProfile.role,
+            }
+          }));
+        } catch (err) {
+          // Token is invalid, remove it
+          api.removeAuthToken();
+        }
+      }
+      
+      setIsInitialized(true);
+    };
+
+    initializeAuth();
   }, []);
 
   // Save to localStorage on change
@@ -123,20 +155,68 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state, isInitialized]);
 
-  const login = (email: string) => {
-    setState(prev => ({
-      ...prev,
-      user: {
-        id: 'u1',
-        name: 'Teresa Treasurer',
-        email,
-        role: 'Treasurer'
-      }
-    }));
+  const signup = async (data: api.SignupData) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.signup(data);
+      setState(prev => ({
+        ...prev,
+        user: {
+          id: response.id,
+          name: `${response.firstName} ${response.lastName}`,
+          email: response.email,
+          role: response.role,
+        }
+      }));
+    } catch (err) {
+      const errorMessage = err instanceof api.ApiError ? err.message : 'Signup failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setState(prev => ({ ...prev, user: null }));
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.login({ email, password });
+      setState(prev => ({
+        ...prev,
+        user: {
+          id: response.id,
+          name: `${response.firstName} ${response.lastName}`,
+          email: response.email,
+          role: response.role,
+        }
+      }));
+    } catch (err) {
+      const errorMessage = err instanceof api.ApiError ? err.message : 'Login failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await api.logout();
+      setState(prev => ({ ...prev, user: null }));
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Still clear user state even if API call fails
+      setState(prev => ({ ...prev, user: null }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   const addTransaction = (t: Omit<Transaction, 'id'>) => {
@@ -196,7 +276,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       ...state,
       login,
+      signup,
       logout,
+      isLoading,
+      error,
+      clearError,
       addTransaction,
       addProject,
       updateProject,
